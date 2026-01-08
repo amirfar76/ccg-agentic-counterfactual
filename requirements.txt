@@ -1,0 +1,12 @@
+# Minimal runtime dependencies (see pyproject.toml for canonical list)
+numpy
+pandas
+tqdm
+matplotlib
+pyyaml
+python-dotenv
+requests
+rouge-score
+torch
+transformers
+sbi

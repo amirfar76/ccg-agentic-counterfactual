@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+title: "Conformal Counterfactual Generation for LLM-Based Autonomous Control"
+message: "If you use this code, please cite the associated ICML 2026 submission."
+authors:
+  - family-names: "Farzaneh"
+    given-names: "Amirmohammad"
+  - family-names: "D'Oro"
+    given-names: "Salvatore"
+  - family-names: "Simeone"
+    given-names: "Osvaldo"
+license: "MIT"
+repository-code: ""

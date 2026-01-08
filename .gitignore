@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+.venv/
+venv/
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Outputs / logs / artifacts
+outputs/
+sbi-logs/
+models/*.pt
+models/*.ckpt
+models/*.bin
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ns-3 build artifacts (if copied here)
+ns3/build/
+ns3/*.o
+ns3/*.obj

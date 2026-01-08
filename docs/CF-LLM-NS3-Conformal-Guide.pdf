@@ -1,0 +1,386 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [ 5 0 R 7 0 R 9 0 R ] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 3155 >>
+stream
+BT
+/F1 10 Tf
+40 801 Td
+(Conformalized Counterfactual LLM × NS-3 ? End-to-End Run Guide) Tj
+0 -12 Td
+(Last updated: 2025-09-16 14:36) Tj
+0 -12 Td
+0 -12 Td
+(Overview) Tj
+0 -12 Td
+(This project connects an NS-3 LTE wireless scenario with an Ollama-served LLM and a) Tj
+0 -12 Td
+(conformal counterfactual pipeline. You can: \(1\) generate calibration/test data; \(2\) calibrate) Tj
+0 -12 Td
+(a distance threshold ??; \(3\) test by sampling counterfactual candidates until they fall within ??;) Tj
+0 -12 Td
+(and \(4\) visualize results.) Tj
+0 -12 Td
+0 -12 Td
+(Prerequisites) Tj
+0 -12 Td
+(? macOS/Linux) Tj
+0 -12 Td
+(? Python 3.10+ \(recommended: a virtualenv\)) Tj
+0 -12 Td
+(? NS-3 \(tested with 3.39\): your tree should provide an ?ns3? runner \(or ?waf? on older trees\)) Tj
+0 -12 Td
+(? Ollama running locally with a pulled model \(e.g., llama3:latest, or a smaller/faster one\)) Tj
+0 -12 Td
+(? Build tools for NS-3 \(cmake, clang/gcc\) already configured) Tj
+0 -12 Td
+0 -12 Td
+(1\) Clone / unpack the repo) Tj
+0 -12 Td
+($ unzip cf-llm-ns3-conformal.zip) Tj
+0 -12 Td
+($ cd cf-llm-ns3-conformal) Tj
+0 -12 Td
+0 -12 Td
+(2\) Python environment and dependencies) Tj
+0 -12 Td
+($ python3 -m venv .venv) Tj
+0 -12 Td
+($ source .venv/bin/activate) Tj
+0 -12 Td
+($ pip install -r requirements.txt) Tj
+0 -12 Td
+0 -12 Td
+(3\) Configure environment) Tj
+0 -12 Td
+($ cp .env.example .env) Tj
+0 -12 Td
+(Edit .env:) Tj
+0 -12 Td
+(  NS3_ROOT=/path/to/your/ns-3.39     \(e.g., /Users/you/ns-3.39 or /Users/you/Desktop/NS/ns-3-dev\)) Tj
+0 -12 Td
+(  OLLAMA_HOST=http://localhost:11434) Tj
+0 -12 Td
+(  OLLAMA_MODEL=llama3:latest         \(or a faster one, e.g., llama3.1:8b-instruct\)) Tj
+0 -12 Td
+(  OUTPUT_DIR=outputs) Tj
+0 -12 Td
+(  ALPHA=0.1) Tj
+0 -12 Td
+(  METRIC=rouge                       \(options: rouge, numeric\)) Tj
+0 -12 Td
+(  MAX_SAMPLES=50) Tj
+0 -12 Td
+0 -12 Td
+(Tip: Shell scripts do not read .env automatically. Either export in your shell:) Tj
+0 -12 Td
+($ export NS3_ROOT=/path/to/ns-3.39) Tj
+0 -12 Td
+(or source the .env:) Tj
+0 -12 Td
+($ set -a; source .env; set +a) Tj
+0 -12 Td
+0 -12 Td
+(4\) Build the NS-3 scenario) Tj
+0 -12 Td
+($ chmod +x scripts/patch_build_ns3.sh) Tj
+0 -12 Td
+($ ./scripts/patch_build_ns3.sh) Tj
+0 -12 Td
+(This copies ns3/ran-sim.cc into $NS3_ROOT/scratch and builds it.) Tj
+0 -12 Td
+0 -12 Td
+(Sanity check:) Tj
+0 -12 Td
+($ $NS3_ROOT/ns3 run ran-sim --no-build -- --numUes=5 --scheduler=rr --trafficMbps=1.0 --duration=2 ) Tj
+0 -12 Td
+(--rngRun=1 --output=/tmp/metrics.json) Tj
+0 -12 Td
+($ cat /tmp/metrics.json) Tj
+0 -12 Td
+0 -12 Td
+(5\) \(Optional\) Warm up Ollama) Tj
+0 -12 Td
+($ ollama pull llama3:latest    # or your chosen model) Tj
+0 -12 Td
+($ ollama run llama3:latest "ok") Tj
+0 -12 Td
+0 -12 Td
+(6\) Generate calibration + test datasets) Tj
+0 -12 Td
+(This runs the full LLM?NS-3?report pipeline for pairs \(X, X?\) with shared exogenous noise.) Tj
+0 -12 Td
+(Outputs go to outputs/data/.) Tj
+0 -12 Td
+(Example \(smaller pilot first\):) Tj
+0 -12 Td
+($ python -m cfllm.data_gen_calib --n-calib 10 --n-test 5 --alpha 0.1 --metric rouge --seed 123) Tj
+0 -12 Td
+0 -12 Td
+(Artifacts:) Tj
+0 -12 Td
+(? outputs/data/calib.jsonl) Tj
+0 -12 Td
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 3980 >>
+stream
+BT
+/F1 10 Tf
+40 801 Td
+(? outputs/data/test.jsonl) Tj
+0 -12 Td
+(? outputs/data/meta.json) Tj
+0 -12 Td
+0 -12 Td
+(Inspect prompts \(no jq\):) Tj
+0 -12 Td
+($ python - <<'PY') Tj
+0 -12 Td
+(import json, itertools) Tj
+0 -12 Td
+(for i, line in enumerate\(itertools.islice\(open\("outputs/data/calib.jsonl"\), 5\), 1\):) Tj
+0 -12 Td
+(    r = json.loads\(line\)) Tj
+0 -12 Td
+(    print\(f"{i}. X: {r['X']}\\n   X': {r['X_prime']}\\n"\)) Tj
+0 -12 Td
+(PY) Tj
+0 -12 Td
+0 -12 Td
+(7\) Calibrate the threshold ??) Tj
+0 -12 Td
+(Split-conformal threshold based on nonconformity s_i = d\(Y_i, Y?_i,true\),) Tj
+0 -12 Td
+(with k = ceil\(\(n+1\)\(1-?\)\), ?? = s_\(k\).) Tj
+0 -12 Td
+($ python -m cfllm.calibrate --alpha 0.1 --metric rouge) Tj
+0 -12 Td
+(Output: outputs/calibration/calibration.json) Tj
+0 -12 Td
+0 -12 Td
+(Switch metric to numeric \(no regeneration needed\):) Tj
+0 -12 Td
+($ python -m cfllm.calibrate --metric numeric) Tj
+0 -12 Td
+0 -12 Td
+(8\) Test on held-out pairs) Tj
+0 -12 Td
+(Given \(X, Y\) and alternative X?, sample candidates under X? until d\(Y, Y?^\) ? ?? or) Tj
+0 -12 Td
+(the budget is exhausted. Results go to outputs/test/.) Tj
+0 -12 Td
+($ python -m cfllm.test_cf --metric rouge --max-samples 8 --seed 123) Tj
+0 -12 Td
+0 -12 Td
+(Outputs:) Tj
+0 -12 Td
+(? outputs/test/results.csv) Tj
+0 -12 Td
+(? outputs/test/summary.json \(includes tau, coverage, accept rate, avg samples, etc.\)) Tj
+0 -12 Td
+0 -12 Td
+(9\) Plotting \(install matplotlib once\)) Tj
+0 -12 Td
+($ pip install matplotlib) Tj
+0 -12 Td
+(Quick plots:) Tj
+0 -12 Td
+($ python - <<'PY') Tj
+0 -12 Td
+(import json, pandas as pd, matplotlib.pyplot as plt) Tj
+0 -12 Td
+(df = pd.read_csv\("outputs/test/results.csv"\)) Tj
+0 -12 Td
+(with open\("outputs/test/summary.json"\) as f: summ = json.load\(f\)) Tj
+0 -12 Td
+(tau = summ["tau"]) Tj
+0 -12 Td
+(plt.figure\(\); plt.bar\(df["idx"], df["samples_used"]\); plt.xlabel\("Test case idx"\); plt.ylabel\("Samples ) Tj
+0 -12 Td
+(used"\)) Tj
+0 -12 Td
+(plt.title\("Samples used per test case"\); plt.tight_layout\(\); ) Tj
+0 -12 Td
+(plt.savefig\("outputs/test/samples_per_case.png"\); plt.close\(\)) Tj
+0 -12 Td
+(plt.figure\(\); plt.bar\(["covered_truth","accepted"], [df["covered_truth"].sum\(\), df["accepted"].sum\(\)]\)) Tj
+0 -12 Td
+(plt.ylabel\("Count"\); plt.title\("Coverage and acceptance counts"\); plt.tight_layout\(\)) Tj
+0 -12 Td
+(plt.savefig\("outputs/test/coverage_acceptance.png"\); plt.close\(\)) Tj
+0 -12 Td
+(plt.figure\(\); df["dist_Y_Yp_true"].hist\(bins=10\); plt.axvline\(tau, linestyle="--"\)) Tj
+0 -12 Td
+(plt.xlabel\("d\(Y, Y'_true\)"\); plt.ylabel\("Count"\); plt.title\("Truth distance distribution with tau"\)) Tj
+0 -12 Td
+(plt.tight_layout\(\); plt.savefig\("outputs/test/truth_distance_hist.png"\); plt.close\(\)) Tj
+0 -12 Td
+(vals = pd.to_numeric\(df["dist_Yp_accepted_to_true"], errors="coerce"\).dropna\(\)) Tj
+0 -12 Td
+(if len\(vals\): plt.figure\(\); vals.hist\(bins=min\(8, max\(3, len\(vals\)\)\)\); plt.xlabel\("d\(Y'^acc, Y'_true\)"\)) Tj
+0 -12 Td
+(plt.ylabel\("Count"\); plt.title\("Error of accepted vs truth"\); plt.tight_layout\(\)) Tj
+0 -12 Td
+(plt.savefig\("outputs/test/accepted_error_hist.png"\); plt.close\(\)) Tj
+0 -12 Td
+(print\("Saved plots under outputs/test/"\)) Tj
+0 -12 Td
+(PY) Tj
+0 -12 Td
+0 -12 Td
+(10\) Speed tips \(recommended when scaling to ~100 samples\)) Tj
+0 -12 Td
+(? env_bridge: ensure ns3 runs with --no-build; add subprocess timeout \(60s\).) Tj
+0 -12 Td
+(? Reuse the action for X? during sampling; vary only NS-3 rngRun. \(Cheap & effective.\)) Tj
+0 -12 Td
+(? Cap candidate duration at test-time \(e.g., 2?3s\) to keep each attempt fast.) Tj
+0 -12 Td
+(? Parallelize across test rows \(ProcessPoolExecutor; e.g., --workers 4\).) Tj
+0 -12 Td
+(? Cache action_from_prompt\(prompt\) results on disk to avoid repeated LLM calls.) Tj
+0 -12 Td
+(? Use a smaller Ollama model for faster generations.) Tj
+0 -12 Td
+(? Use metric=numeric for faster comparisons and more meaningful numerical alignment.) Tj
+0 -12 Td
+0 -12 Td
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 2816 >>
+stream
+BT
+/F1 10 Tf
+40 801 Td
+(11\) Switching metrics) Tj
+0 -12 Td
+(? ROUGE \(default\): distance = 1 ? ROUGE-L F1 \(lower is better\).) Tj
+0 -12 Td
+(? numeric: extract numbers from Y and Y?, align by order, return average absolute diff.) Tj
+0 -12 Td
+(To switch:) Tj
+0 -12 Td
+($ python -m cfllm.calibrate --metric numeric) Tj
+0 -12 Td
+($ python -m cfllm.test_cf --metric numeric --max-samples 8 --seed 123) Tj
+0 -12 Td
+0 -12 Td
+(12\) Interpreting test summary) Tj
+0 -12 Td
+(Example:) Tj
+0 -12 Td
+({"n": 5, "tau": 0.6818, "metric": "rouge", "coverage_truth": 0.6,) Tj
+0 -12 Td
+( "accept_rate": 0.6, "avg_samples": 3.4, "avg_error_if_accepted": 0.6321}) Tj
+0 -12 Td
+(? coverage_truth: fraction with d\(Y, Y?_true\) ? ??  \(target ? 1?? in large samples\).) Tj
+0 -12 Td
+(? accept_rate: fraction where at least one candidate Y?^ met d ? ?? within budget.) Tj
+0 -12 Td
+(? avg_samples: attempts per case \(lower is faster\).) Tj
+0 -12 Td
+(? avg_error_if_accepted: for accepted cases, distance between Y?^ \(accepted\) and Y?_true.) Tj
+0 -12 Td
+0 -12 Td
+(13\) Troubleshooting) Tj
+0 -12 Td
+(? ?NS3_ROOT is not set?: export NS3_ROOT or source your .env with set -a.) Tj
+0 -12 Td
+(? Build errors on ran-sim.cc: re-run scripts/patch_build_ns3.sh; ensure LTE/EPC/FlowMonitor are ) Tj
+0 -12 Td
+(enabled.) Tj
+0 -12 Td
+(? Slow/stuck runs: add --no-build; cap duration; add timeouts; warm up Ollama and a short NS-3 run.) Tj
+0 -12 Td
+(? LLM JSON parse errors: cfllm/llm.py re-prompts once; switch to a more instruction-following model if ) Tj
+0 -12 Td
+(needed.) Tj
+0 -12 Td
+(? No accepts: increase ? \(larger ??\), use numeric metric, gentler edits, or increase sample budget.) Tj
+0 -12 Td
+(? Plots need matplotlib: pip install matplotlib.) Tj
+0 -12 Td
+0 -12 Td
+(14\) Command quick-reference) Tj
+0 -12 Td
+(# Build once) Tj
+0 -12 Td
+(export NS3_ROOT=/path/to/ns-3.39) Tj
+0 -12 Td
+(./scripts/patch_build_ns3.sh) Tj
+0 -12 Td
+0 -12 Td
+(# Generate data \(pilot\)) Tj
+0 -12 Td
+(python -m cfllm.data_gen_calib --n-calib 10 --n-test 5 --alpha 0.1 --metric rouge --seed 123) Tj
+0 -12 Td
+0 -12 Td
+(# Calibrate) Tj
+0 -12 Td
+(python -m cfllm.calibrate --alpha 0.1 --metric rouge     # or --metric numeric) Tj
+0 -12 Td
+0 -12 Td
+(# Test) Tj
+0 -12 Td
+(python -m cfllm.test_cf --metric rouge --max-samples 8 --seed 123) Tj
+0 -12 Td
+0 -12 Td
+(# Switch to numeric) Tj
+0 -12 Td
+(python -m cfllm.calibrate --metric numeric) Tj
+0 -12 Td
+(python -m cfllm.test_cf --metric numeric --max-samples 8 --seed 123) Tj
+0 -12 Td
+0 -12 Td
+(Notes) Tj
+0 -12 Td
+(? All paths are relative to the repo root unless stated.) Tj
+0 -12 Td
+(? You can freely regenerate data and recalibrate with different metrics/?.) Tj
+0 -12 Td
+(? The conformal math is standard split-conformal using exchangeable \(X, X?\) pairs with shared noise to ) Tj
+0 -12 Td
+(obtain Y?_true.) Tj
+0 -12 Td
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 3 0 R >> >> /Contents 8 0 R >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000129 00000 n 
+0000000199 00000 n 
+0000003406 00000 n 
+0000003538 00000 n 
+0000007570 00000 n 
+0000007702 00000 n 
+0000010570 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R >>
+startxref
+10702
+%%EOF

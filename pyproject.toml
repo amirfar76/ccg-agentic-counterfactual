@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cfllm"
+version = "0.1.0"
+description = "Counterfactual generation + conformal calibration for LLM-based control with ns-3"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Amirmohammad Farzaneh"}]
+
+dependencies = [
+  "numpy",
+  "pandas",
+  "tqdm",
+  "matplotlib",
+  "pyyaml",
+  "python-dotenv",
+  "requests",
+  "rouge-score",
+  "torch",
+  "transformers",
+  "sbi",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
